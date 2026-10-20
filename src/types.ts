@@ -1,61 +1,54 @@
-export interface User {
+export interface Usuario {
   id: string;
-  email: string;
+  correo: string;
   razonSocial: string;
-  password: string;
-  status: 'pending' | 'approved' | 'suspended';
-  createdAt: string;
-  lastLogin?: string;
+  clave: string;
+  estado: 'pendiente' | 'aprobado' | 'suspendido';
+  fechaRegistro: string;
+  rol: 'usuario' | 'administrador';
 }
 
-export interface AdminCredentials {
-  username: string;
-  password: string;
-}
-
-export interface PersonInCharge {
+export interface PersonaACargo {
   nombre: string;
   apellido: string;
   cedula: string;
+  cargo: 'Gerente' | 'Sub-Gerente' | 'Encargado';
   telefono: string;
-  email: string;
-  cargo: 'Gerente' | 'Subgerente' | 'Encargado';
+  correo: string;
 }
 
-export interface WorkCenterData {
+export interface CentroTrabajo {
   id: string;
-  userId: string;
+  usuarioId: string;
   razonSocial: string;
   rif: string;
+  tipoCentro: 'Bodegón' | 'Restaurante' | 'Tienda' | 'Almacén';
   estado: string;
   municipio: string;
   parroquia: string;
   sector: string;
   calle: string;
   numeroLocal: string;
-  tipoCentro: 'Bodegón' | 'Restaurante' | 'Tienda' | 'Almacén' | '';
   centroComercial: string;
   esSucursal: string;
   ubicacionSucursal: string;
+  personaACargo: PersonaACargo;
   eleccionDelegados: string;
   existeComite: string;
   comiteActivo: string;
-  personInCharge: PersonInCharge;
-  createdAt: string;
-  updatedAt: string;
+  fechaRegistro: string;
 }
 
-export interface Worker {
+export interface Trabajador {
   id: string;
-  userId: string;
+  centroTrabajoId: string;
   nombreApellido: string;
   cedulaIdentidad: string;
   cargo: string;
   fechaIngreso: string;
 }
 
-export interface Database {
-  users: User[];
-  workCenters: WorkCenterData[];
-  workers: Worker[];
+export interface Sesion {
+  usuarioId: string;
+  rol: 'usuario' | 'administrador';
 }

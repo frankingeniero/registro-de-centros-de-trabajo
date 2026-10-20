@@ -1,393 +1,337 @@
 import { useState, useEffect } from 'react';
-import { getAllUsers, approveUser, suspendUser, resetUserPassword, getAllWorkCenters, getAllWorkers } from '../utils/storage';
-import { exportAllToPDF, exportAllToExcel } from '../utils/exportUtils';
-import { User, WorkCenterData, Worker } from '../types';
+import { Usuario, CentroTrabajo, Trabajador } from '../types';
+import {
+  getUsuarios,
+  actualizarEstadoUsuario,
+  resetearClave,
+  getCentrosTrabajo,
+  getTrabajadores,
+  cerrarSesion,
+} from '../utils/storage';
+import { exportarTodosRegistrosPDF, exportarTodosRegistrosExcel } from '../utils/exportUtils';
 
-interface AdminPanelProps {
+interface Props {
   onLogout: () => void;
 }
 
-export default function AdminPanel({ onLogout }: AdminPanelProps) {
-  const [users, setUsers] = useState<User[]>([]);
-  const [workCenters, setWorkCenters] = useState<WorkCenterData[]>([]);
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [activeTab, setActiveTab] = useState<'users' | 'centers' | 'workers'>('users');
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [notification, setNotification] = useState('');
+export default function AdminPanel({ onLogout }: Props) {
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [centros, setCentros] = useState<CentroTrabajo[]>([]);
+  const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
+  const [vista, setVista] = useState<'usuarios' | 'centros' | 'trabajadores'>('usuarios');
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [usuarioReset, setUsuarioReset] = useState<Usuario | null>(null);
+  const [nuevaClave, setNuevaClave] = useState('');
+  const [mensaje, setMensaje] = useState({ texto: '', tipo: '' as 'exito' | 'error' | '' });
 
   useEffect(() => {
-    loadData();
+    cargarDatos();
   }, []);
 
-  const loadData = () => {
-    setUsers(getAllUsers());
-    setWorkCenters(getAllWorkCenters());
-    setWorkers(getAllWorkers());
+  const cargarDatos = () => {
+    setUsuarios(getUsuarios().filter(u => u.rol === 'usuario'));
+    setCentros(getCentrosTrabajo());
+    setTrabajadores(getTrabajadores());
   };
 
-  const handleApprove = (userId: string) => {
-    approveUser(userId);
-    loadData();
-    setNotification('Usuario aprobado exitosamente.');
-    setTimeout(() => setNotification(''), 3000);
+  const handleAprobar = (id: string) => {
+    actualizarEstadoUsuario(id, 'aprobado');
+    cargarDatos();
+    setMensaje({ texto: 'Usuario aprobado exitosamente', tipo: 'exito' });
+    setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
   };
 
-  const handleSuspend = (userId: string) => {
+  const handleSuspender = (id: string) => {
     if (confirm('¿Está seguro de suspender este usuario?')) {
-      suspendUser(userId);
-      loadData();
-      setNotification('Usuario suspendido.');
-      setTimeout(() => setNotification(''), 3000);
+      actualizarEstadoUsuario(id, 'suspendido');
+      cargarDatos();
+      setMensaje({ texto: 'Usuario suspendido', tipo: 'exito' });
+      setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
     }
   };
 
-  const handleOpenPasswordModal = (userId: string) => {
-    setSelectedUserId(userId);
-    setNewPassword('');
-    setShowPasswordModal(true);
+  const handleReactivar = (id: string) => {
+    actualizarEstadoUsuario(id, 'aprobado');
+    cargarDatos();
+    setMensaje({ texto: 'Usuario reactivado', tipo: 'exito' });
+    setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
   };
 
-  const handleResetPassword = () => {
-    if (newPassword.length < 4) {
-      alert('La contraseña debe tener al menos 4 caracteres.');
+  const handleResetClave = () => {
+    if (!usuarioReset || !nuevaClave) return;
+    if (nuevaClave.length < 5) {
+      setMensaje({ texto: 'La contraseña debe tener al menos 5 caracteres', tipo: 'error' });
       return;
     }
-    resetUserPassword(selectedUserId, newPassword);
-    setShowPasswordModal(false);
-    setNotification('Contraseña actualizada exitosamente.');
-    setTimeout(() => setNotification(''), 3000);
+    resetearClave(usuarioReset.id, nuevaClave);
+    setShowResetModal(false);
+    setUsuarioReset(null);
+    setNuevaClave('');
+    setMensaje({ texto: `Clave actualizada para ${usuarioReset.correo}`, tipo: 'exito' });
+    cargarDatos();
+    setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
   };
 
-  const handleExportPDF = () => {
-    exportAllToPDF(users, workCenters, workers);
-    setNotification('PDF generado exitosamente.');
-    setTimeout(() => setNotification(''), 3000);
+  const handleLogout = () => {
+    cerrarSesion();
+    onLogout();
   };
 
-  const handleExportExcel = () => {
-    exportAllToExcel(users, workCenters, workers);
-    setNotification('Excel generado exitosamente.');
-    setTimeout(() => setNotification(''), 3000);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Aprobado</span>;
-      case 'pending':
-        return <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">Pendiente</span>;
-      case 'suspended':
-        return <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">Suspendido</span>;
-      default:
-        return null;
+  const getEstadoColor = (estado: string) => {
+    switch (estado) {
+      case 'aprobado': return 'bg-green-100 text-green-700';
+      case 'pendiente': return 'bg-yellow-100 text-yellow-700';
+      case 'suspendido': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
     }
   };
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-green-600 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      {/* Header Admin */}
+      <header className="bg-gradient-to-r from-green-700 to-emerald-800 text-white shadow-lg sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-white/20 p-2 rounded-lg">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
             </div>
             <div>
-              <h1 className="text-xl font-bold">Panel de Administrador</h1>
-              <p className="text-green-200 text-xs">Gestión de Centros de Trabajo</p>
+              <h1 className="text-lg font-bold">Panel de Administrador</h1>
+              <p className="text-green-200 text-xs">Gestión de usuarios y registros</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleExportPDF}
-              className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              PDF
+          <div className="flex items-center gap-2">
+            <button onClick={() => exportarTodosRegistrosPDF(centros, usuarios, trabajadores)} className="hidden md:flex items-center gap-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition-all">
+              📄 PDF General
             </button>
-            <button
-              onClick={handleExportExcel}
-              className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Excel
+            <button onClick={() => exportarTodosRegistrosExcel(centros, usuarios, trabajadores)} className="hidden md:flex items-center gap-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-all">
+              📊 Excel General
             </button>
-            <button
-              onClick={onLogout}
-              className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Salir
+            <button onClick={handleLogout} className="flex items-center gap-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition-all">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+              <span className="hidden md:inline">Salir</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Notification */}
-      {notification && (
-        <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg animate-fade-in">
-          {notification}
+      {/* Stats */}
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-green-50 border border-green-100 rounded-xl p-4 text-center">
+            <p className="text-3xl font-bold text-green-700">{usuarios.length}</p>
+            <p className="text-sm text-gray-600">Usuarios</p>
+          </div>
+          <div className="bg-green-50 border border-green-100 rounded-xl p-4 text-center">
+            <p className="text-3xl font-bold text-green-700">{centros.length}</p>
+            <p className="text-sm text-gray-600">Centros</p>
+          </div>
+          <div className="bg-green-50 border border-green-100 rounded-xl p-4 text-center">
+            <p className="text-3xl font-bold text-green-700">{trabajadores.length}</p>
+            <p className="text-sm text-gray-600">Trabajadores</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-green-50 border-b border-green-100">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex gap-1">
+            <button onClick={() => setVista('usuarios')} className={`px-5 py-3 font-semibold text-sm rounded-t-lg transition-all ${vista === 'usuarios' ? 'bg-white text-green-700 border-b-2 border-green-600' : 'text-green-600 hover:bg-green-100'}`}>
+              👥 Usuarios
+            </button>
+            <button onClick={() => setVista('centros')} className={`px-5 py-3 font-semibold text-sm rounded-t-lg transition-all ${vista === 'centros' ? 'bg-white text-green-700 border-b-2 border-green-600' : 'text-green-600 hover:bg-green-100'}`}>
+              🏢 Centros de Trabajo
+            </button>
+            <button onClick={() => setVista('trabajadores')} className={`px-5 py-3 font-semibold text-sm rounded-t-lg transition-all ${vista === 'trabajadores' ? 'bg-white text-green-700 border-b-2 border-green-600' : 'text-green-600 hover:bg-green-100'}`}>
+              👷 Trabajadores
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mensaje */}
+      {mensaje.texto && (
+        <div className="max-w-7xl mx-auto px-4 mt-4">
+          <div className={`p-4 rounded-xl text-sm font-medium ${mensaje.tipo === 'exito' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+            {mensaje.texto}
+          </div>
         </div>
       )}
 
-      {/* Stats */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-green-600 font-medium">Usuarios</p>
-                <p className="text-2xl font-bold text-gray-800">{users.length}</p>
-              </div>
-              <div className="bg-green-100 p-3 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        {/* Vista Usuarios */}
+        {vista === 'usuarios' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-green-800">Gestión de Usuarios</h2>
+              <div className="flex gap-2 md:hidden">
+                <button onClick={() => exportarTodosRegistrosPDF(centros, usuarios, trabajadores)} className="px-3 py-2 bg-red-500 text-white text-sm rounded-lg">📄 PDF</button>
+                <button onClick={() => exportarTodosRegistrosExcel(centros, usuarios, trabajadores)} className="px-3 py-2 bg-emerald-600 text-white text-sm rounded-lg">📊 Excel</button>
               </div>
             </div>
-          </div>
-          <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-green-600 font-medium">Centros Registrados</p>
-                <p className="text-2xl font-bold text-gray-800">{workCenters.length}</p>
+            {usuarios.length === 0 ? (
+              <div className="text-center py-12 bg-green-50 rounded-2xl border border-green-100">
+                <p className="text-gray-500">No hay usuarios registrados</p>
               </div>
-              <div className="bg-green-100 p-3 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-green-600 font-medium">Trabajadores</p>
-                <p className="text-2xl font-bold text-gray-800">{workers.length}</p>
-              </div>
-              <div className="bg-green-100 p-3 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 bg-green-50 p-1 rounded-xl">
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'users' ? 'bg-green-600 text-white shadow-md' : 'text-green-700 hover:bg-green-100'
-            }`}
-          >
-            Usuarios ({users.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('centers')}
-            className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'centers' ? 'bg-green-600 text-white shadow-md' : 'text-green-700 hover:bg-green-100'
-            }`}
-          >
-            Centros ({workCenters.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('workers')}
-            className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'workers' ? 'bg-green-600 text-white shadow-md' : 'text-green-700 hover:bg-green-100'
-            }`}
-          >
-            Trabajadores ({workers.length})
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="bg-white border-2 border-green-100 rounded-2xl shadow-sm overflow-hidden">
-          {/* Users Tab */}
-          {activeTab === 'users' && (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-green-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Correo</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Razón Social</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Estado</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Fecha Registro</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {users.length === 0 ? (
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full bg-white rounded-2xl border border-green-100 overflow-hidden shadow-sm">
+                  <thead className="bg-green-600 text-white">
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                        No hay usuarios registrados aún.
-                      </td>
+                      <th className="px-4 py-3 text-left text-sm">Correo</th>
+                      <th className="px-4 py-3 text-left text-sm">Razón Social</th>
+                      <th className="px-4 py-3 text-left text-sm">Estado</th>
+                      <th className="px-4 py-3 text-left text-sm">Registro</th>
+                      <th className="px-4 py-3 text-center text-sm">Acciones</th>
                     </tr>
-                  ) : (
-                    users.map((user) => (
-                      <tr key={user.id} className="hover:bg-green-50/50">
-                        <td className="px-4 py-3 text-sm text-gray-700">{user.email}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{user.razonSocial}</td>
-                        <td className="px-4 py-3">{getStatusBadge(user.status)}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{new Date(user.createdAt).toLocaleDateString('es-VE')}</td>
+                  </thead>
+                  <tbody>
+                    {usuarios.map(u => (
+                      <tr key={u.id} className="border-t border-green-50 hover:bg-green-50 transition-colors">
+                        <td className="px-4 py-3 text-sm text-gray-800 font-medium">{u.correo}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{u.razonSocial}</td>
                         <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            {user.status === 'pending' && (
-                              <button
-                                onClick={() => handleApprove(user.id)}
-                                className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-colors"
-                              >
-                                Aprobar
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getEstadoColor(u.estado)}`}>
+                            {u.estado.charAt(0).toUpperCase() + u.estado.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{new Date(u.fechaRegistro).toLocaleDateString('es-VE')}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex justify-center gap-1 flex-wrap">
+                            {u.estado === 'pendiente' && (
+                              <button onClick={() => handleAprobar(u.id)} className="px-3 py-1 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 transition-all">
+                                ✓ Aprobar
                               </button>
                             )}
-                            {user.status === 'approved' && (
-                              <button
-                                onClick={() => handleSuspend(user.id)}
-                                className="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 transition-colors"
-                              >
-                                Suspender
+                            {u.estado === 'aprobado' && (
+                              <button onClick={() => handleSuspender(u.id)} className="px-3 py-1 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 transition-all">
+                                ⏸ Suspender
                               </button>
                             )}
-                            {user.status === 'suspended' && (
-                              <button
-                                onClick={() => handleApprove(user.id)}
-                                className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-colors"
-                              >
-                                Reactivar
+                            {u.estado === 'suspendido' && (
+                              <button onClick={() => handleReactivar(u.id)} className="px-3 py-1 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-all">
+                                ▶ Reactivar
                               </button>
                             )}
-                            <button
-                              onClick={() => handleOpenPasswordModal(user.id)}
-                              className="px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded-lg hover:bg-blue-600 transition-colors"
-                            >
-                              Clave
+                            <button onClick={() => { setUsuarioReset(u); setShowResetModal(true); }} className="px-3 py-1 bg-amber-500 text-white text-xs rounded-lg hover:bg-amber-600 transition-all">
+                              🔑 Clave
                             </button>
                           </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
-          {/* Centers Tab */}
-          {activeTab === 'centers' && (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-green-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Razón Social</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">RIF</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Tipo</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Estado</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Municipio</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Encargado</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {workCenters.length === 0 ? (
+        {/* Vista Centros */}
+        {vista === 'centros' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-green-800">Centros de Trabajo Registrados</h2>
+            {centros.length === 0 ? (
+              <div className="text-center py-12 bg-green-50 rounded-2xl border border-green-100">
+                <p className="text-gray-500">No hay centros de trabajo registrados</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full bg-white rounded-2xl border border-green-100 overflow-hidden shadow-sm">
+                  <thead className="bg-green-600 text-white">
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                        No hay centros de trabajo registrados aún.
-                      </td>
+                      <th className="px-4 py-3 text-left text-sm">Razón Social</th>
+                      <th className="px-4 py-3 text-left text-sm">RIF</th>
+                      <th className="px-4 py-3 text-left text-sm">Tipo</th>
+                      <th className="px-4 py-3 text-left text-sm">Estado</th>
+                      <th className="px-4 py-3 text-left text-sm">Municipio</th>
+                      <th className="px-4 py-3 text-left text-sm">Persona a Cargo</th>
                     </tr>
-                  ) : (
-                    workCenters.map((wc) => (
-                      <tr key={wc.id} className="hover:bg-green-50/50">
-                        <td className="px-4 py-3 text-sm text-gray-700 font-medium">{wc.razonSocial}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{wc.rif}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{wc.tipoCentro}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{wc.estado}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{wc.municipio}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{wc.personInCharge.nombre} {wc.personInCharge.apellido}</td>
+                  </thead>
+                  <tbody>
+                    {centros.map(c => (
+                      <tr key={c.id} className="border-t border-green-50 hover:bg-green-50 transition-colors">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-800">{c.razonSocial}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{c.rif}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{c.tipoCentro}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{c.estado}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{c.municipio}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{c.personaACargo.nombre} {c.personaACargo.apellido}</td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
-          {/* Workers Tab */}
-          {activeTab === 'workers' && (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-green-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Nombre y Apellido</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Cédula</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Cargo</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Fecha Ingreso</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-green-700 uppercase">Centro</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {workers.length === 0 ? (
+        {/* Vista Trabajadores */}
+        {vista === 'trabajadores' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-green-800">Todos los Trabajadores</h2>
+            {trabajadores.length === 0 ? (
+              <div className="text-center py-12 bg-green-50 rounded-2xl border border-green-100">
+                <p className="text-gray-500">No hay trabajadores registrados</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full bg-white rounded-2xl border border-green-100 overflow-hidden shadow-sm">
+                  <thead className="bg-green-600 text-white">
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                        No hay trabajadores registrados aún.
-                      </td>
+                      <th className="px-4 py-3 text-left text-sm">Nombre</th>
+                      <th className="px-4 py-3 text-left text-sm">Cédula</th>
+                      <th className="px-4 py-3 text-left text-sm">Cargo</th>
+                      <th className="px-4 py-3 text-left text-sm">Fecha Ingreso</th>
+                      <th className="px-4 py-3 text-left text-sm">Centro</th>
                     </tr>
-                  ) : (
-                    workers.map((w) => {
-                      const wc = workCenters.find(c => c.userId === w.userId);
+                  </thead>
+                  <tbody>
+                    {trabajadores.map(t => {
+                      const centro = centros.find(c => c.id === t.centroTrabajoId);
                       return (
-                        <tr key={w.id} className="hover:bg-green-50/50">
-                          <td className="px-4 py-3 text-sm text-gray-700 font-medium">{w.nombreApellido}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700">{w.cedulaIdentidad}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700">{w.cargo}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700">{w.fechaIngreso}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700">{wc?.razonSocial || 'N/A'}</td>
+                        <tr key={t.id} className="border-t border-green-50 hover:bg-green-50 transition-colors">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-800">{t.nombreApellido}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{t.cedulaIdentidad}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{t.cargo}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{new Date(t.fechaIngreso).toLocaleDateString('es-VE')}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{centro?.razonSocial || 'N/A'}</td>
                         </tr>
                       );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
 
-      {/* Password Modal */}
-      {showPasswordModal && (
+      {/* Modal Reset Clave */}
+      {showResetModal && usuarioReset && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Asignar/Recuperar Contraseña</h3>
-            <p className="text-sm text-gray-500 mb-4">Ingrese la nueva contraseña para este usuario:</p>
-            <input
-              type="text"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Nueva contraseña"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all outline-none mb-4"
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowPasswordModal(false)}
-                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
-              >
+            <h3 className="text-xl font-bold text-gray-800 mb-2">🔑 Resetear Contraseña</h3>
+            <p className="text-gray-600 text-sm mb-4">Usuario: <strong>{usuarioReset.correo}</strong></p>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Nueva Contraseña</label>
+              <input
+                type="text"
+                value={nuevaClave}
+                onChange={e => setNuevaClave(e.target.value)}
+                placeholder="Mínimo 5 caracteres"
+                className="w-full px-4 py-3 border-2 border-green-100 rounded-xl focus:border-green-500 outline-none"
+              />
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => { setShowResetModal(false); setUsuarioReset(null); setNuevaClave(''); }} className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all">
                 Cancelar
               </button>
-              <button
-                onClick={handleResetPassword}
-                className="flex-1 px-4 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors"
-              >
-                Guardar
+              <button onClick={handleResetClave} className="flex-1 px-4 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all">
+                Guardar Clave
               </button>
             </div>
           </div>

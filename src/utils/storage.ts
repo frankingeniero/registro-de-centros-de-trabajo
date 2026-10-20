@@ -1,157 +1,168 @@
-import { Database, User, WorkCenterData, Worker } from '../types';
+import { Usuario, CentroTrabajo, Trabajador, Sesion } from '../types';
 
-const DB_KEY = 'centro_trabajo_db';
-
-const ADMIN_USER: User = {
-  id: 'admin-001',
-  email: 'administrador',
-  razonSocial: 'Administrador del Sistema',
-  password: 'frank12',
-  status: 'approved',
-  createdAt: new Date().toISOString(),
+const KEYS = {
+  USUARIOS: 've_usuarios',
+  CENTROS: 've_centros_trabajo',
+  TRABAJADORES: 've_trabajadores',
+  SESION: 've_sesion',
 };
 
-function getDatabase(): Database {
-  const data = localStorage.getItem(DB_KEY);
-  if (data) {
-    return JSON.parse(data);
+// Inicializar admin si no existe
+export function inicializarAdmin() {
+  const usuarios = getUsuarios();
+  const adminExiste = usuarios.find(u => u.rol === 'administrador');
+  if (!adminExiste) {
+    const admin: Usuario = {
+      id: 'admin-001',
+      correo: 'administrador@sistema.com',
+      razonSocial: 'Administrador del Sistema',
+      clave: 'frank12',
+      estado: 'aprobado',
+      fechaRegistro: new Date().toISOString(),
+      rol: 'administrador',
+    };
+    usuarios.push(admin);
+    localStorage.setItem(KEYS.USUARIOS, JSON.stringify(usuarios));
   }
-  const initial: Database = {
-    users: [],
-    workCenters: [],
-    workers: [],
-  };
-  localStorage.setItem(DB_KEY, JSON.stringify(initial));
-  return initial;
 }
 
-function saveDatabase(db: Database): void {
-  localStorage.setItem(DB_KEY, JSON.stringify(db));
+// USUARIOS
+export function getUsuarios(): Usuario[] {
+  const data = localStorage.getItem(KEYS.USUARIOS);
+  return data ? JSON.parse(data) : [];
 }
 
-// Admin functions
-export function loginAdmin(username: string, password: string): boolean {
-  return username === 'administrador' && password === 'frank12';
+export function guardarUsuarios(usuarios: Usuario[]) {
+  localStorage.setItem(KEYS.USUARIOS, JSON.stringify(usuarios));
 }
 
-// User functions
-export function registerUser(email: string, razonSocial: string, password: string): { success: boolean; message: string } {
-  const db = getDatabase();
-  const exists = db.users.find(u => u.email === email);
-  if (exists) {
-    return { success: false, message: 'Este correo ya está registrado.' };
+export function registrarUsuario(usuario: Omit<Usuario, 'id' | 'estado' | 'fechaRegistro' | 'rol'>): { exito: boolean; mensaje: string } {
+  const usuarios = getUsuarios();
+  if (usuarios.find(u => u.correo === usuario.correo)) {
+    return { exito: false, mensaje: 'El correo ya está registrado' };
   }
-  const newUser: User = {
-    id: `user-${Date.now()}`,
-    email,
-    razonSocial,
-    password,
-    status: 'pending',
-    createdAt: new Date().toISOString(),
+  const nuevo: Usuario = {
+    ...usuario,
+    id: 'usr-' + Date.now(),
+    estado: 'pendiente',
+    fechaRegistro: new Date().toISOString(),
+    rol: 'usuario',
   };
-  db.users.push(newUser);
-  saveDatabase(db);
-  return { success: true, message: 'Registro exitoso. Espere la aprobación del administrador.' };
+  usuarios.push(nuevo);
+  guardarUsuarios(usuarios);
+  return { exito: true, mensaje: 'Registro exitoso. Espere aprobación del administrador.' };
 }
 
-export function loginUser(email: string, password: string): { success: boolean; user?: User; message: string } {
-  const db = getDatabase();
-  const user = db.users.find(u => u.email === email && u.password === password);
+export function login(correo: string, clave: string): { exito: boolean; mensaje: string; usuario?: Usuario } {
+  const usuarios = getUsuarios();
+  const user = usuarios.find(u => u.correo === correo && u.clave === clave);
   if (!user) {
-    return { success: false, message: 'Credenciales incorrectas.' };
+    return { exito: false, mensaje: 'Credenciales incorrectas' };
   }
-  if (user.status === 'pending') {
-    return { success: false, message: 'Su cuenta está pendiente de aprobación.' };
+  if (user.estado === 'pendiente') {
+    return { exito: false, mensaje: 'Su cuenta está pendiente de aprobación por el administrador' };
   }
-  if (user.status === 'suspended') {
-    return { success: false, message: 'Su cuenta ha sido suspendida.' };
+  if (user.estado === 'suspendido') {
+    return { exito: false, mensaje: 'Su cuenta está suspendida. Contacte al administrador' };
   }
-  user.lastLogin = new Date().toISOString();
-  saveDatabase(db);
-  return { success: true, user, message: 'Inicio de sesión exitoso.' };
+  const sesion: Sesion = { usuarioId: user.id, rol: user.rol };
+  localStorage.setItem(KEYS.SESION, JSON.stringify(sesion));
+  return { exito: true, mensaje: 'Bienvenido', usuario: user };
 }
 
-export function getAllUsers(): User[] {
-  return getDatabase().users;
+export function getSesion(): Sesion | null {
+  const data = localStorage.getItem(KEYS.SESION);
+  return data ? JSON.parse(data) : null;
 }
 
-export function approveUser(userId: string): void {
-  const db = getDatabase();
-  const user = db.users.find(u => u.id === userId);
-  if (user) {
-    user.status = 'approved';
-    saveDatabase(db);
-  }
+export function cerrarSesion() {
+  localStorage.removeItem(KEYS.SESION);
 }
 
-export function suspendUser(userId: string): void {
-  const db = getDatabase();
-  const user = db.users.find(u => u.id === userId);
-  if (user) {
-    user.status = 'suspended';
-    saveDatabase(db);
-  }
+export function getUsuarioPorId(id: string): Usuario | undefined {
+  return getUsuarios().find(u => u.id === id);
 }
 
-export function resetUserPassword(userId: string, newPassword: string): void {
-  const db = getDatabase();
-  const user = db.users.find(u => u.id === userId);
-  if (user) {
-    user.password = newPassword;
-    saveDatabase(db);
+export function actualizarEstadoUsuario(id: string, estado: Usuario['estado']) {
+  const usuarios = getUsuarios();
+  const idx = usuarios.findIndex(u => u.id === id);
+  if (idx !== -1) {
+    usuarios[idx].estado = estado;
+    guardarUsuarios(usuarios);
   }
 }
 
-export function getUserById(userId: string): User | undefined {
-  return getDatabase().users.find(u => u.id === userId);
-}
-
-// Work Center functions
-export function saveWorkCenter(data: WorkCenterData): void {
-  const db = getDatabase();
-  const index = db.workCenters.findIndex(wc => wc.userId === data.userId);
-  if (index >= 0) {
-    db.workCenters[index] = { ...data, updatedAt: new Date().toISOString() };
-  } else {
-    db.workCenters.push(data);
+export function resetearClave(id: string, nuevaClave: string) {
+  const usuarios = getUsuarios();
+  const idx = usuarios.findIndex(u => u.id === id);
+  if (idx !== -1) {
+    usuarios[idx].clave = nuevaClave;
+    guardarUsuarios(usuarios);
   }
-  saveDatabase(db);
 }
 
-export function getWorkCenterByUserId(userId: string): WorkCenterData | undefined {
-  return getDatabase().workCenters.find(wc => wc.userId === userId);
+// CENTROS DE TRABAJO
+export function getCentrosTrabajo(): CentroTrabajo[] {
+  const data = localStorage.getItem(KEYS.CENTROS);
+  return data ? JSON.parse(data) : [];
 }
 
-export function getAllWorkCenters(): WorkCenterData[] {
-  return getDatabase().workCenters;
+export function guardarCentroTrabajo(centro: Omit<CentroTrabajo, 'id' | 'fechaRegistro'>): CentroTrabajo {
+  const centros = getCentrosTrabajo();
+  const nuevo: CentroTrabajo = {
+    ...centro,
+    id: 'ct-' + Date.now(),
+    fechaRegistro: new Date().toISOString(),
+  };
+  centros.push(nuevo);
+  localStorage.setItem(KEYS.CENTROS, JSON.stringify(centros));
+  return nuevo;
 }
 
-// Worker functions
-export function saveWorker(worker: Worker): void {
-  const db = getDatabase();
-  const index = db.workers.findIndex(w => w.id === worker.id);
-  if (index >= 0) {
-    db.workers[index] = worker;
-  } else {
-    db.workers.push(worker);
+export function actualizarCentroTrabajo(centro: CentroTrabajo) {
+  const centros = getCentrosTrabajo();
+  const idx = centros.findIndex(c => c.id === centro.id);
+  if (idx !== -1) {
+    centros[idx] = centro;
+    localStorage.setItem(KEYS.CENTROS, JSON.stringify(centros));
   }
-  saveDatabase(db);
 }
 
-export function getWorkersByUserId(userId: string): Worker[] {
-  return getDatabase().workers.filter(w => w.userId === userId);
+export function getCentroPorUsuario(usuarioId: string): CentroTrabajo | undefined {
+  return getCentrosTrabajo().find(c => c.usuarioId === usuarioId);
 }
 
-export function deleteWorker(workerId: string): void {
-  const db = getDatabase();
-  db.workers = db.workers.filter(w => w.id !== workerId);
-  saveDatabase(db);
+// TRABAJADORES
+export function getTrabajadores(): Trabajador[] {
+  const data = localStorage.getItem(KEYS.TRABAJADORES);
+  return data ? JSON.parse(data) : [];
 }
 
-export function getAllWorkers(): Worker[] {
-  return getDatabase().workers;
+export function getTrabajadoresPorCentro(centroId: string): Trabajador[] {
+  return getTrabajadores().filter(t => t.centroTrabajoId === centroId);
 }
 
-export function getFullDatabase(): Database {
-  return getDatabase();
+export function agregarTrabajador(trabajador: Omit<Trabajador, 'id'>): Trabajador {
+  const trabajadores = getTrabajadores();
+  const nuevo: Trabajador = {
+    ...trabajador,
+    id: 'trab-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+  };
+  trabajadores.push(nuevo);
+  localStorage.setItem(KEYS.TRABAJADORES, JSON.stringify(trabajadores));
+  return nuevo;
+}
+
+export function eliminarTrabajador(id: string) {
+  const trabajadores = getTrabajadores().filter(t => t.id !== id);
+  localStorage.setItem(KEYS.TRABAJADORES, JSON.stringify(trabajadores));
+}
+
+export function actualizarTrabajador(trabajador: Trabajador) {
+  const trabajadores = getTrabajadores();
+  const idx = trabajadores.findIndex(t => t.id === trabajador.id);
+  if (idx !== -1) {
+    trabajadores[idx] = trabajador;
+    localStorage.setItem(KEYS.TRABAJADORES, JSON.stringify(trabajadores));
+  }
 }

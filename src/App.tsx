@@ -1,58 +1,54 @@
 import { useState, useEffect } from 'react';
+import { Usuario } from './types';
+import { getSesion, getUsuarioPorId, inicializarAdmin } from './utils/storage';
 import LoginPage from './components/LoginPage';
-import AdminPanel from './components/AdminPanel';
 import UserDashboard from './components/UserDashboard';
-
-type View = 'login' | 'admin' | 'user';
+import AdminPanel from './components/AdminPanel';
 
 function App() {
-  const [view, setView] = useState<View>('login');
-  const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
+  const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    // Check if there's a saved session
-    const savedSession = localStorage.getItem('currentSession');
-    if (savedSession) {
-      const session = JSON.parse(savedSession);
-      if (session.type === 'admin') {
-        setView('admin');
-      } else if (session.type === 'user' && session.userId) {
-        setView('user');
-        setCurrentUserId(session.userId);
+    inicializarAdmin();
+    const sesion = getSesion();
+    if (sesion) {
+      const user = getUsuarioPorId(sesion.usuarioId);
+      if (user && user.estado === 'aprobado') {
+        setUsuarioActual(user);
       }
     }
+    setCargando(false);
   }, []);
 
-  const handleAdminLogin = () => {
-    setView('admin');
-    localStorage.setItem('currentSession', JSON.stringify({ type: 'admin' }));
-  };
-
-  const handleUserLogin = (userId: string) => {
-    setCurrentUserId(userId);
-    setView('user');
-    localStorage.setItem('currentSession', JSON.stringify({ type: 'user', userId }));
+  const handleLogin = (usuario: Usuario) => {
+    setUsuarioActual(usuario);
   };
 
   const handleLogout = () => {
-    setView('login');
-    setCurrentUserId('');
-    localStorage.removeItem('currentSession');
+    setUsuarioActual(null);
   };
 
-  return (
-    <>
-      {view === 'login' && (
-        <LoginPage onAdminLogin={handleAdminLogin} onUserLogin={handleUserLogin} />
-      )}
-      {view === 'admin' && (
-        <AdminPanel onLogout={handleLogout} />
-      )}
-      {view === 'user' && (
-        <UserDashboard userId={currentUserId} onLogout={handleLogout} />
-      )}
-    </>
-  );
+  if (cargando) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-green-700 font-semibold">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!usuarioActual) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
+  if (usuarioActual.rol === 'administrador') {
+    return <AdminPanel onLogout={handleLogout} />;
+  }
+
+  return <UserDashboard usuario={usuarioActual} onLogout={handleLogout} />;
 }
 
 export default App;

@@ -22,12 +22,25 @@
   }
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
 }
 
 .animate-scale-in {
   animation: scaleIn 0.2s ease-out forwards;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 /* Custom scrollbar */
@@ -37,7 +50,8 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f1f5f1;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -49,17 +63,22 @@
   background: #4ade80;
 }
 
-/* Table styles */
-table {
-  border-collapse: collapse;
-}
-
 /* Select styling */
 select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-  background-position: right 0.75rem center;
-  background-repeat: no-repeat;
-  background-size: 1.25rem;
-  padding-right: 2.5rem;
+  appearance: auto;
+}
+
+/* Input focus */
+input:focus, select:focus, textarea:focus {
+  transition: all 0.2s ease;
+}
+
+/* Table responsive */
+@media (max-width: 768px) {
+  table {
+    font-size: 0.75rem;
+  }
+  th, td {
+    padding: 0.5rem 0.75rem;
+  }
 }
