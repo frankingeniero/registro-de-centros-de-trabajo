@@ -1,5 +1,7 @@
 {
-  "name": "sandbox-workspace",
+  "name": "registro-centros-trabajo",
+  "version": "1.0.0",
+  "description": "Sistema de registro de centros de trabajo en Venezuela con sincronización en la nube",
   "private": true,
   "type": "module",
   "scripts": {
