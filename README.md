@@ -1,151 +1,216 @@
-# 📋 Sistema de Registro de Centros de Trabajo - Venezuela
+# 🏢 Sistema de Registro de Centros de Trabajo - Venezuela
 
-## 🌐 Sincronización en la Nube (Firebase)
+Sistema web completo para el registro y gestión de centros de trabajo en Venezuela, con sincronización en la nube mediante Firebase Firestore.
 
-Para que **todos los dispositivos puedan ver los mismos registros en tiempo real**, es necesario configurar Firebase Firestore.
+## 🌟 Características
 
-### ✅ ¿Cómo funciona?
+### Para Usuarios:
+- ✅ Registro de centros de trabajo con datos completos
+- ✅ Listas desplegables en cascada: Estado → Municipio → Parroquia (Venezuela)
+- ✅ Identificación del tipo de centro: Bodegón, Restaurante, Tienda, Almacén
+- ✅ Datos de la persona a cargo (Gerente, Sub-Gerente, Encargado)
+- ✅ Gestión de trabajadores (agregar, editar, eliminar)
+- ✅ Afirmaciones/Negaciones sobre delegados y comités
+- ✅ Exportación a PDF y Excel
+- ✅ Sincronización en tiempo real
 
-- **Sin Firebase**: Los datos se guardan solo en el navegador local (localStorage). Cada dispositivo tiene sus propios datos.
-- **Con Firebase**: Los datos se sincronizan en la nube. Cualquier dispositivo con las mismas credenciales ve los mismos datos en tiempo real.
-
----
-
-## 🔧 Pasos para Configurar Firebase
-
-### 1. Crear cuenta en Firebase
-1. Ve a [https://console.firebase.google.com/](https://console.firebase.google.com/)
-2. Inicia sesión con tu cuenta de Google
-3. Haz clic en **"Agregar proyecto"**
-4. Dale un nombre al proyecto (ej: "registro-centros-trabajo")
-5. Acepta los términos y haz clic en **"Continuar"**
-6. Desactiva Google Analytics (opcional) y haz clic en **"Crear proyecto"**
-
-### 2. Crear base de datos Firestore
-1. En el menú lateral, haz clic en **"Firestore Database"** → **"Crear base de datos"**
-2. Selecciona **"Comenzar en modo de prueba"** (para desarrollo)
-3. Selecciona la ubicación más cercana (ej: `southamerica-east1` para Venezuela)
-4. Haz clic en **"Habilitar"**
-
-### 3. Registrar la aplicación web
-1. En la página principal del proyecto, haz clic en el icono **Web (</>)**
-2. Dale un nombre a la app (ej: "registro-web")
-3. **NO** marques "Configurar también Firebase Hosting"
-4. Haz clic en **"Registrar app"**
-5. **Copia los valores de configuración** que aparecen. Se ven así:
-
-```javascript
-const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "tu-proyecto.firebaseapp.com",
-  projectId: "tu-proyecto-id",
-  storageBucket: "tu-proyecto.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abc123"
-};
-```
-
-### 4. Configurar la aplicación
-1. Abre la aplicación web
-2. En la pantalla de login, busca el botón flotante **"⚙️ Configurar Nube"** (esquina inferior derecha)
-3. Pega las credenciales copiadas en los campos correspondientes
-4. Haz clic en **"🔗 Conectar"**
-5. ¡Listo! La base de datos en la nube está activa
-
----
-
-## 🔄 Sincronización en Tiempo Real
-
-Una vez configurado Firebase:
-
-- ✅ **Todos los dispositivos** que usen las mismas credenciales ven los mismos datos
-- ✅ Los cambios se reflejan **automáticamente** sin necesidad de recargar
-- ✅ El administrador puede ver **todos los registros** de todos los centros de trabajo
-- ✅ Los datos persisten aunque se cierre el navegador
-
-### Indicador de estado:
-- 🟢 **Verde**: Sincronización en la nube activa
-- 🟡 **Amarillo**: Modo local (solo este dispositivo)
-
----
-
-## 👤 Credenciales de Administrador
-
-- **Correo**: `administrador@sistema.com`
-- **Contraseña**: `frank12`
-
-### Funciones del Administrador:
-- ✅ Aprobar / Suspender usuarios
+### Para Administradores:
+- ✅ Gestión de usuarios (aprobar, suspender, reactivar)
 - ✅ Resetear contraseñas de usuarios
-- ✅ Ver TODOS los centros de trabajo registrados
-- ✅ Ver TODOS los trabajadores de todos los centros
+- ✅ Ver todos los centros de trabajo registrados
+- ✅ Ver todos los trabajadores de todos los centros
 - ✅ Exportar reportes generales en PDF y Excel
-- ✅ Configurar la sincronización en la nube
+- ✅ Sincronización en tiempo real desde cualquier dispositivo
 
----
+## 🚀 Instalación
 
-## 📱 Uso desde diferentes dispositivos
+### Requisitos Previos
+- Node.js 18+ instalado
+- npm o yarn
+- Cuenta de Google (para Firebase)
 
-1. **En cada dispositivo**, abre la aplicación web
-2. **Configura Firebase** con las mismas credenciales en cada uno
-3. Los usuarios, centros y trabajadores se sincronizarán automáticamente
-4. El administrador puede ver todo desde cualquier dispositivo
+### Pasos de Instalación
 
----
-
-## 🛡️ Seguridad (Recomendaciones)
-
-Para producción, se recomienda:
-
-1. **Configurar reglas de Firestore** para proteger los datos:
-   - Ir a Firestore Database → Rules
-   - Configurar reglas de autenticación
-
-2. **Usar Firebase Authentication** en lugar de contraseñas en texto plano
-
-3. **Restringir dominios** autorizados en Firebase Console
-
----
-
-## 📊 Estructura de la Base de Datos
-
-```
-Firestore Database
-├── usuarios/
-│   ├── admin-001 (Administrador)
-│   ├── usr-xxx (Usuarios registrados)
-├── centros/
-│   ├── ct-xxx (Centros de trabajo)
-├── trabajadores/
-│   ├── trab-xxx (Trabajadores de cada centro)
+1. **Clonar el repositorio:**
+```bash
+git clone https://github.com/TU-USUARIO/registro-centros-trabajo.git
+cd registro-centros-trabajo
 ```
 
+2. **Instalar dependencias:**
+```bash
+npm install
+```
+
+3. **Configurar Firebase:**
+
+   a. Ve a [Firebase Console](https://console.firebase.google.com/)
+   
+   b. Crea un nuevo proyecto
+   
+   c. Activa Firestore Database (modo prueba para desarrollo)
+   
+   d. Registra una aplicación web
+   
+   e. Copia las credenciales de configuración
+
+4. **Ejecutar en modo desarrollo:**
+```bash
+npm run dev
+```
+
+5. **Abrir en el navegador:**
+```
+http://localhost:5173
+```
+
+6. **Configurar Firebase en la aplicación:**
+   - En la pantalla de login, busca el botón "⚙️ Configurar Nube"
+   - Pega las credenciales de Firebase
+   - Haz clic en "Conectar"
+
+## 🔐 Credenciales de Administrador
+
+- **Correo:** `administrador@sistema.com`
+- **Contraseña:** `frank12`
+
+## 📦 Construcción para Producción
+
+```bash
+npm run build
+```
+
+Los archivos optimizados se generarán en la carpeta `dist/`.
+
+## 🌐 Despliegue
+
+### Opción 1: Firebase Hosting (Recomendada)
+
+```bash
+# Instalar Firebase CLI
+npm install -g firebase-tools
+
+# Iniciar sesión
+firebase login
+
+# Inicializar hosting
+firebase init hosting
+
+# Construir proyecto
+npm run build
+
+# Desplegar
+firebase deploy --only hosting
+```
+
+### Opción 2: Vercel
+
+1. Sube el código a GitHub
+2. Ve a [Vercel](https://vercel.com)
+3. Importa el repositorio
+4. Despliega automáticamente
+
+### Opción 3: Netlify
+
+1. Construye el proyecto: `npm run build`
+2. Ve a [Netlify Drop](https://app.netlify.com/drop)
+3. Arrastra la carpeta `dist`
+
+## 📁 Estructura del Proyecto
+
+```
+registro-centros-trabajo/
+├── public/                 # Archivos públicos
+├── src/
+│   ├── components/        # Componentes React
+│   │   ├── AdminPanel.tsx
+│   │   ├── ConfigPanel.tsx
+│   │   ├── LoginPage.tsx
+│   │   └── UserDashboard.tsx
+│   ├── data/
+│   │   └── venezuela.ts   # Datos de estados, municipios, parroquias
+│   ├── types.ts           # Tipos TypeScript
+│   ├── utils/
+│   │   ├── exportUtils.ts # Funciones de exportación PDF/Excel
+│   │   ├── firebase.ts    # Configuración de Firebase
+│   │   └── storage.ts     # Funciones de almacenamiento
+│   ├── App.tsx            # Componente principal
+│   ├── index.css          # Estilos globales
+│   └── main.tsx           # Punto de entrada
+├── .gitignore
+├── firebase.json          # Configuración de Firebase Hosting
+├── index.html
+├── package.json
+├── README.md
+├── GUIA_PUBLICACION.md    # Guía completa de publicación
+├── PUBLICACION_RAPIDA.md  # Guía rápida de publicación
+├── tsconfig.json
+└── vite.config.ts
+```
+
+## 🔧 Tecnologías Utilizadas
+
+- **React 18** - Biblioteca de interfaz de usuario
+- **TypeScript** - Tipado estático
+- **Vite** - Herramienta de construcción
+- **Tailwind CSS** - Framework de CSS
+- **Firebase Firestore** - Base de datos en la nube
+- **jsPDF** - Generación de PDF
+- **XLSX** - Generación de Excel
+
+## 📊 Base de Datos
+
+La aplicación utiliza Firebase Firestore con las siguientes colecciones:
+
+- **usuarios** - Usuarios registrados (administradores y usuarios normales)
+- **centros** - Centros de trabajo registrados
+- **trabajadores** - Trabajadores de cada centro
+
+## 🔒 Seguridad
+
+### Para Desarrollo (Modo Prueba):
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
+
+### Para Producción:
+Configura reglas de seguridad más estrictas y considera usar Firebase Authentication.
+
+## 🌍 Datos de Venezuela
+
+La aplicación incluye datos completos de:
+- 24 Estados
+- 335 Municipios
+- 1,146 Parroquias
+
+## 📱 Responsivo
+
+La aplicación es completamente responsiva y funciona en:
+- 💻 Escritorio
+- 📱 Tablets
+- 📱 Móviles
+
+## 🆘 Soporte
+
+Para problemas o preguntas:
+- Revisa las guías de publicación: `GUIA_PUBLICACION.md` y `PUBLICACION_RAPIDA.md`
+- Documentación de Firebase: https://firebase.google.com/docs
+
+## 📝 Licencia
+
+Este proyecto es de uso libre para fines educativos y comerciales.
+
+## 🎉 Créditos
+
+Desarrollado para el registro de centros de trabajo en Venezuela 🇻🇪
+
 ---
 
-## 🆘 Solución de Problemas
-
-### "Los datos no se sincronizan"
-- Verifica que Firebase esté configurado correctamente (indicador verde)
-- Asegúrate de usar las mismas credenciales en todos los dispositivos
-- Verifica la conexión a internet
-
-### "No puedo conectarme a Firebase"
-- Revisa que las credenciales sean correctas
-- Verifica que Firestore Database esté habilitado
-- Comprueba que el proyecto esté activo
-
-### "Perdí mis datos locales"
-- Si Firebase estaba configurado, los datos están en la nube
-- Si no, los datos locales se perdieron al cambiar de dispositivo
-
----
-
-## 📞 Soporte
-
-Para más información sobre Firebase:
-- [Documentación de Firebase](https://firebase.google.com/docs)
-- [Consola de Firebase](https://console.firebase.google.com/)
-
----
-
-**Desarrollado para el registro de centros de trabajo en Venezuela** 🇻🇪
+**¡Gracias por usar este sistema!** 🚀
