@@ -69,6 +69,44 @@ http://localhost:5173
    - Pega las credenciales de Firebase
    - Haz clic en "Conectar"
 
+## 🔥 CONFIGURAR FIREBASE (IMPORTANTE)
+
+Para que la sincronización en la nube funcione, necesitas configurar Firebase:
+
+### Guía Rápida (7 minutos):
+
+1. **Crear proyecto en Firebase:**
+   - Ve a https://console.firebase.google.com/
+   - Clic en "Agregar proyecto"
+   - Nombre: `registro-centros-trabajo`
+
+2. **Activar Firestore Database:**
+   - Menú lateral → "Firestore Database"
+   - Clic en "Crear base de datos"
+   - Modo: "Comenzar en modo de prueba"
+
+3. **Configurar reglas:**
+   - Pestaña "Reglas"
+   - Pega las reglas permisivas (ver `FIREBASE_CONFIG.md`)
+
+4. **Registrar app web:**
+   - Configuración del proyecto → "Tus aplicaciones"
+   - Clic en ícono Web (</>)
+   - Copia las credenciales
+
+5. **Conectar en tu página:**
+   - Abre tu página web
+   - Clic en "⚙️ Configurar Nube" (botón flotante)
+   - Pega las credenciales
+   - Clic en "Conectar"
+
+📚 **Guías detalladas:**
+- `RESUMEN_FIREBASE.md` - Resumen en 3 pasos
+- `CONFIGURAR_FIREBASE_PASO_A_PASO.md` - Guía completa
+- `FIREBASE_RAPIDO.md` - Guía visual rápida
+- `EJEMPLO_CREDENCIALES_FIREBASE.md` - Ejemplo de credenciales
+- `VERIFICAR_FIREBASE.md` - Verificar que funciona
+
 ## 🔐 Credenciales de Administrador
 
 - **Correo:** `administrador@sistema.com`
@@ -81,6 +119,35 @@ npm run build
 ```
 
 Los archivos optimizados se generarán en la carpeta `dist/`.
+
+## 🌍 ACCESO REMOTO - USUARIOS DESDE CUALQUIER LUGAR
+
+Este sistema permite que usuarios desde **cualquier ubicación del mundo** puedan enviar registros y tú como administrador los veas en tiempo real.
+
+### ¿Cómo funciona?
+
+1. **Configura Firebase** - Crea una base de datos en la nube
+2. **Despliega la aplicación** - Publícala en internet (Cloudflare, Vercel, Netlify)
+3. **Comparte la URL** - Los usuarios acceden desde cualquier dispositivo
+4. **Sincronización en tiempo real** - Todos ven los mismos datos automáticamente
+
+### Flujo de trabajo:
+
+**Usuarios (desde cualquier ubicación):**
+- Acceden a la URL pública
+- Se registran y envían sus datos
+- Los datos se sincronizan automáticamente
+
+**Administrador (tú):**
+- Ves todos los registros de todos los usuarios
+- Apruebas/suspendes usuarios
+- Exportas reportes generales
+- Todo en tiempo real
+
+📚 **Guías completas:**
+- `RESUMEN_EJECUTIVO.md` - Resumen para administradores
+- `CONFIGURAR_ACCESO_REMOTO.md` - Guía completa de acceso remoto
+- `INSTRUCCIONES_PARA_USUARIOS.md` - Para compartir con usuarios
 
 ## 🌐 Despliegue
 
