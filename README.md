@@ -120,6 +120,35 @@ npm run build
 
 Los archivos optimizados se generarán en la carpeta `dist/`.
 
+## 🌍 ACCESO REMOTO - USUARIOS DESDE CUALQUIER LUGAR
+
+Este sistema permite que usuarios desde **cualquier ubicación del mundo** puedan enviar registros y tú como administrador los veas en tiempo real.
+
+### ¿Cómo funciona?
+
+1. **Configura Firebase** - Crea una base de datos en la nube
+2. **Despliega la aplicación** - Publícala en internet (Cloudflare, Vercel, Netlify)
+3. **Comparte la URL** - Los usuarios acceden desde cualquier dispositivo
+4. **Sincronización en tiempo real** - Todos ven los mismos datos automáticamente
+
+### Flujo de trabajo:
+
+**Usuarios (desde cualquier ubicación):**
+- Acceden a la URL pública
+- Se registran y envían sus datos
+- Los datos se sincronizan automáticamente
+
+**Administrador (tú):**
+- Ves todos los registros de todos los usuarios
+- Apruebas/suspendes usuarios
+- Exportas reportes generales
+- Todo en tiempo real
+
+📚 **Guías completas:**
+- `RESUMEN_EJECUTIVO.md` - Resumen para administradores
+- `CONFIGURAR_ACCESO_REMOTO.md` - Guía completa de acceso remoto
+- `INSTRUCCIONES_PARA_USUARIOS.md` - Para compartir con usuarios
+
 ## 🌐 Despliegue
 
 ### Opción 1: Firebase Hosting (Recomendada)
